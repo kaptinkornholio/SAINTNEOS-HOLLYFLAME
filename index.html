@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Saint Neos OneArmy - HolyFlame Mining 3D Game</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body { 
+      background: #1a1a2e; 
+      color: #e5e5e5; 
+      font-family: 'Cinzel', serif; 
+      margin: 0; 
+      padding: 0; 
+    }
+    .game-container { 
+      display: flex; 
+    }
+    .sidebar { 
+      width: 220px; 
+      background: linear-gradient(180deg, #16213e 0%, #0f3460 100%); 
+      padding: 15px; 
+      height: 100vh; 
+      overflow-y: auto; 
+      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5); 
+    }
+    .sidebar button { 
+      display: block; 
+      width: 100%; 
+      margin: 8px 0; 
+      padding: 12px; 
+      background: #ff6f61; 
+      color: #fff; 
+      border: none; 
+      border-radius: 8px; 
+      cursor: pointer; 
+      font-size: 14px; 
+      font-weight: 700; 
+      text-transform: uppercase; 
+      box-shadow: 0 0 10px rgba(255, 111, 97, 0.5); 
+      animation: glow 2s infinite ease-in-out; 
+      transition: all 0.3s ease; 
+    }
+    @keyframes glow { 
+      0% { box-shadow: 0 0 10px rgba(255, 111, 97, 0.5); } 
+      50% { box-shadow: 0 0 20px rgba(255, 111, 97, 0.8), 0 0 30px rgba(255, 111, 97, 0.4); } 
+      100% { box-shadow: 0 0 10px rgba(255, 111, 97, 0.5); } 
+    }
+    .sidebar button:hover { 
+      background: #e55b50; 
+      transform: translateY(-2px); 
+      box-shadow: 0 0 20px rgba(255, 111, 97, 1), 0 0 30px rgba(255, 111, 97, 0.6); 
+    }
+    .canvas-container { 
+      flex-grow: 1; 
+      position: relative; 
+    }
+    .info-bar { 
+      position: absolute; 
+      top: 0; 
+      left: 0; 
+      background: #0f3460; 
+      padding: 5px 10px; 
+      border-radius: 0 0 5px 0; 
+      font-size: 14px; 
+    }
+    .market-options, .dao-options, .crafting-options, .leaderboard, .quests, .achievements, .chat { 
+      margin-top: 15px; 
+      color: #e5e5e5; 
+      font-size: 13px; 
+    }
+    .market-options div, .dao-options div, .crafting-options div { 
+      margin-bottom: 8px; 
+    }
+    .market-options input, .dao-options input, .crafting-options input, .chat input { 
+      width: 60px; 
+      margin: 5px 5px 5px 0; 
+      padding: 5px; 
+      background: #0f3460; 
+      color: #e5e5e5; 
+      border: 1px solid #ff6f61; 
+      border-radius: 4px; 
+      font-family: 'Cinzel', serif; 
+    }
+    .quests div, .achievements div { 
+      margin: 8px 0; 
+    }
+    .chat-box { 
+      height: 100px; 
+      overflow-y: auto; 
+      background: #0f3460; 
+      padding: 8px; 
+      border-radius: 5px; 
+      font-size: 12px; 
+    }
+    .notification { 
+      position: absolute; 
+      top: 50px; 
+      left: 50%; 
+      transform: translateX(-50%); 
+      background: #ff6f61; 
+      padding: 5px 10px; 
+      border-radius: 5px; 
+      display: none; 
+      font-size: 14px; 
+    }
+    .tooltip { 
+      position: absolute; 
+      background: #0f3460; 
+      padding: 5px; 
+      border-radius: 5px; 
+      display: none; 
+      font-size: 12px; 
+    }
+    .tutorial { 
+      position: absolute; 
+      top: 100px; 
+      left: 50%; 
+      transform: translateX(-50%); 
+      background: rgba(15, 52, 96, 0.9); 
+      padding: 10px; 
+      border-radius: 5px; 
+      display: none; 
+      font-size: 14px; 
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/js/postprocessing/EffectComposer.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/js/postprocessing/RenderPass.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/js/postprocessing/UnrealBloomPass.js"></script>
+  <script src="https://unpkg.com/three@0.134.0/examples/js/loaders/FontLoader.js"></script>
+</head>
+<body>
+  <div class="game-container">
+    <div class="sidebar">
+      <button onclick="claimHolyFlame()">Daily Claim</button>
+      <button onclick="changeProfession()">Profession: Monk</button>
+      <button onclick="viewInventory()">Inventory</button>
+      <button onclick="changePFP()">Change PFP</button>
+      <button onclick="changeName()">Change Name</button>
+      <button onclick="viewMonastery()">Monastery</button>
+      <button onclick="viewMarketplace()">Sacred Market</button>
+      <button onclick="saveGame()">Save Game</button>
+      <button onclick="loadGame()">Load Game</button>
+      <div class="market-options">
+        <div>Buy Relics:</div>
+        <input type="number" id="buyRelics" min="0" value="0">
+        <button onclick="buyRelics()">Buy</button>
+        <div>Sell Relics:</div>
+        <input type="number" id="sellRelics" min="0" value="0">
+        <button onclick="sellRelics()">Sell</button>
+      </div>
+      <div class="dao-options">
+        <button onclick="proposeChange()">Propose Change</button>
+        <div>Vote on Price:</div>
+        <input type="number" id="votePrice" min="5" max="50" value="10">
+        <button onclick="voteOnPrice()">Vote</button>
+        <div>Burn Relics:</div>
+        <input type="number" id="burnRelics" min="0" value="0">
+        <button onclick="burnRelics()">Burn</button>
+      </div>
+      <div class="crafting-options">
+        <div>Craft Relic (100 $HOLYFLAME + 10 Relics)</div>
+        <button onclick="craftRelic()">Craft</button>
+      </div>
+      <div class="quests">
+        <div>Quests:</div>
+        <div id="quests">Loading...</div>
+      </div>
+      <div class="achievements">
+        <div>Achievements:</div>
+        <div id="achievements">Loading...</div>
+      </div>
+      <div class="leaderboard">
+        <div>Leaderboard:</div>
+        <div id="leaderboard">Loading...</div>
+      </div>
+      <div class="chat">
+        <div>Chat:</div>
+        <div class="chat-box" id="chat-box"></div>
+        <input type="text" id="chat-input" placeholder="Type a message..." onkeypress="if(event.keyCode===13)sendChatMessage()">
+        <button onclick="sendChatMessage()">Send</button>
+      </div>
+    </div>
+    <div class="canvas-container" id="canvas-container">
+      <div class="info-bar">
+        PFP: Guest | 0 $HOLYFLAME | Relics: 0 | v0.1
+      </div>
+      <div class="notification" id="notification"></div>
+      <div class="tooltip" id="tooltip"></div>
+      <div class="tutorial" id="tutorial">Welcome to Saint Neos OneArmy! Click a building to upgrade it and start mining $HOLYFLAME. Press any key to continue.</div>
+    </div>
+  </div>
+
+  <script>
+    let holyFlame = 0;
+    let relics = 0;
+    let craftedRelics = 0;
+    let playerLevel = 1;
+    let totalHolyFlameMined = 0;
+    let currentProfession = 'Monk';
+    let professions = {
+      'Monk': { holyFlameBonus: 1.2, relicBonus: 1.0 },
+      'Scribe': { holyFlameBonus: 1.0, relicBonus: 1.5 },
+      'Smith': { holyFlameBonus: 1.3, relicBonus: 0.8 }
+    };
+    let market = { relicPrice: 10, supply: 100, demand: 100 };
+    let votes = { priceVotes: [], totalVotes: 0 };
+    let buildings = [
+      { x: 0, y: 0, type: 'shrine', level: 1, production: 1, mesh: null, originalColor: 0xffa500 }, // Near center
+      { x: -2, y: 1, type: 'altar', level: 1, production: 0.5, mesh: null, originalColor: 0xff0000 }, // Northwest
+      { x: 2, y: -1, type: 'forge', level: 1, production: 0.3, mesh: null, originalColor: 0x8b4513 }, // Southeast
+      { x: -1, y: -2, type: 'reliquary', level: 1, production: 0.2, mesh: null, originalColor: 0x00bfff }, // Southwest
+      { x: 1, y: 2, type: 'church', level: 1, production: 1.0, mesh: null, sprite: null, glow: null } // Northeast
+    ];
+    let eventActive = false;
+    let eventMultiplier = 1;
+    let dayNightCycle = 0;
+    let isNight = false;
+    let leaderboard = [
+      { name: "Player1", total: 1000 },
+      { name: "Player2", total: 800 },
+      { name: "Player3", total: 600 },
+      { name: "You", total: 0 }
+    ];
+    let quests = [
+      { id: 1, description: "Mine 50 $HOLYFLAME", target: 50, progress: 0, reward: 5, type: 'holyFlame', completed: false },
+      { id: 2, description: "Craft 1 Relic", target: 1, progress: 0, reward: 10, type: 'craftRelic', completed: false },
+      { id: 3, description: "Upgrade Church to Level 3", target: 3, progress: 0, reward: 15, type: 'churchUpgrade', completed: false }
+    ];
+    let achievements = [
+      { id: 1, description: "Upgrade a building to Level 5", target: 5, progress: 0, completed: false },
+      { id: 2, description: "Mine 100 $HOLYFLAME", target: 100, progress: 0, completed: false }
+    ];
+
+    let scene, camera, renderer, controls, composer;
+    let raycaster = new THREE.Raycaster();
+    let mouse = new THREE.Vector2();
+    let particles = [];
+    let waterfallParticles = [];
+    let glowParticles = [];
+    let audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    let backgroundMusic;
+
+    function init() {
+      scene = new THREE.Scene();
+
+      const skyboxGeometry = new THREE.BoxGeometry(1000, 1000, 1000);
+      const skyboxMaterials = [
+        new THREE.MeshBasicMaterial({ color: 0x000033, side: THREE.BackSide }),
+        new THREE.MeshBasicMaterial({ color: 0x000033, side: THREE.BackSide }),
+        new THREE.MeshBasicMaterial({ color: 0x000033, side: THREE.BackSide }),
+        new THREE.MeshBasicMaterial({ color: 0x000033, side: THREE.BackSide }),
+        new THREE.MeshBasicMaterial({ color: 0x000033, side: THREE.BackSide }),
+        new THREE.MeshBasicMaterial({ color: 0x000033, side: THREE.BackSide })
+      ];
+      const skybox = new THREE.Mesh(skyboxGeometry, skyboxMaterials);
+      scene.add(skybox);
+
+      camera = new THREE.PerspectiveCamera(75, (window.innerWidth - 220) / window.innerHeight, 0.1, 1000);
+      camera.position.set(10, 10, 10);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth - 220, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      console.log('Renderer initialized:', renderer.capabilities.isWebGL2 ? 'WebGL2' : 'WebGL1');
+      document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+
+      const ambientLight = new THREE.AmbientLight(0x404040);
+      scene.add(ambientLight);
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+      directionalLight.position.set(5, 10, 5);
+      directionalLight.castShadow = true;
+      directionalLight.shadow.mapSize.width = 2048;
+      directionalLight.shadow.mapSize.height = 2048;
+      scene.add(directionalLight);
+
+      createFloatingIsland();
+      createBuildings();
+      createRoads();
+      createExitSign();
+      createStars();
+      createWaterfall();
+      createGlowParticles();
+
+      try {
+        const renderPass = new THREE.RenderPass(scene, camera);
+        const bloomPass = new THREE.UnrealBloomPass(
+          new THREE.Vector2(window.innerWidth - 220, window.innerHeight),
+          1.0, // strength
+          0.4, // radius
+          0.6  // threshold
+        );
+        composer = new THREE.EffectComposer(renderer);
+        composer.addPass(renderPass);
+        composer.addPass(bloomPass);
+        console.log('Post-processing initialized successfully');
+      } catch (error) {
+        console.error("Failed to initialize post-processing:", error.message, error.stack);
+        composer = null;
+      }
+
+      playBackgroundMusic();
+
+      window.addEventListener('resize', onWindowResize);
+      window.addEventListener('click', onMouseClick);
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('keydown', onKeyDown);
+
+      setInterval(mineResources, 1000);
+      setInterval(checkRandomEvent, 30000);
+      setInterval(updateLeaderboard, 5000);
+      setInterval(updateDayNightCycle, 100);
+      setInterval(updateQuestsUI, 1000);
+      setInterval(updateAchievementsUI, 1000);
+      updateProfessionButton();
+      updateLeaderboard();
+      updateQuestsUI();
+      updateAchievementsUI();
+      document.getElementById('tutorial').style.display = 'block';
+      animate();
+    }
+
+    function createFloatingIsland() {
+      const geometry = new THREE.PlaneGeometry(10, 10, 50, 50);
+      geometry.rotateX(-Math.PI / 2);
+      const textureLoader = new THREE.TextureLoader();
+      const grassTexture = textureLoader.load('https://threejs.org/examples/textures/terrain/grasslight-big.jpg');
+      grassTexture.wrapS = grassTexture.wrapT = THREE.RepeatWrapping;
+      grassTexture.repeat.set(10, 10);
+      const material = new THREE.MeshPhongMaterial({ 
+        map: grassTexture,
+        displacementMap: textureLoader.load('https://threejs.org/examples/textures/terrain/heightmap.png'),
+        displacementScale: 0.3,
+        shininess: 10
+      });
+      const island = new THREE.Mesh(geometry, material);
+      island.position.y = 0;
+      island.receiveShadow = true;
+      scene.add(island);
+
+      const edgeGeometry = new THREE.BoxGeometry(10, 2, 10);
+      const edgeMaterial = new THREE.MeshPhongMaterial({ 
+        color: 0x606060,
+        map: textureLoader.load('https://threejs.org/examples/textures/terrain/rock.png')
+      });
+      const edge = new THREE.Mesh(edgeGeometry, edgeMaterial);
+      edge.position.y = -1.5;
+      edge.receiveShadow = true;
+      scene.add(edge);
+    }
+
+    function createBuildings() {
+      const textureLoader = new THREE.TextureLoader();
+      buildings.forEach(b => {
+        let geometry, material;
+        if (b.type === 'church') {
+          const spriteTexture = textureLoader.load(
+            'https://example.com/church-sprite.png',
+            () => console.log('Church sprite texture loaded successfully'),
+            undefined,
+            (error) => console.error('Error loading church sprite texture:', error)
+          );
+          material = new THREE.SpriteMaterial({ map: spriteTexture, transparent: true });
+          b.sprite = new THREE.Sprite(material);
+          b.sprite.scale.set(2, 2, 1);
+          b.sprite.position.set(b.x, 1 + b.level * 0.1, b.y);
+          b.sprite.userData = b;
+          scene.add(b.sprite);
+
+          const hitboxGeometry = new THREE.BoxGeometry(1, 1, 1);
+          const hitboxMaterial = new THREE.MeshBasicMaterial({ visible: false });
+          b.mesh = new THREE.Mesh(hitboxGeometry, hitboxMaterial);
+          b.mesh.position.set(b.x, 0.5 + b.level * 0.1, b.y);
+          b.mesh.userData = b;
+          scene.add(b.mesh);
+
+          const glowGeometry = new THREE.SphereGeometry(0.5, 16, 16);
+          const glowMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.5 });
+          b.glow = new THREE.Mesh(glowGeometry, glowMaterial);
+          b.glow.position.set(b.x, 1 + b.level * 0.1, b.y);
+          scene.add(b.glow);
+        } else {
+          if (b.type === 'shrine') {
+            const shape = new THREE.Shape();
+            shape.moveTo(0, 0);
+            shape.lineTo(0.5, 0);
+            shape.lineTo(0.25, 0.5);
+            shape.lineTo(0, 0);
+            geometry = new THREE.ExtrudeGeometry(shape, { depth: 0.5 + b.level * 0.2, bevelEnabled: false });
+            material = new THREE.MeshPhongMaterial({ 
+              color: b.originalColor,
+              map: textureLoader.load('https://threejs.org/examples/textures/general/stone.jpg')
+            });
+          } else if (b.type === 'altar') {
+            geometry = new THREE.CylinderGeometry(0.4 + b.level * 0.1, 0.4 + b.level * 0.1, 0.8 + b.level * 0.2, 32);
+            material = new THREE.MeshPhongMaterial({ 
+              color: b.originalColor,
+              map: textureLoader.load('https://threejs.org/examples/textures/general/marble.jpg')
+            });
+          } else if (b.type === 'forge') {
+            geometry = new THREE.BoxGeometry(0.6 + b.level * 0.2, 0.6 + b.level * 0.2, 0.6 + b.level * 0.2);
+            material = new THREE.MeshPhongMaterial({ 
+              color: b.originalColor,
+              map: textureLoader.load('https://threejs.org/examples/textures/general/metal.jpg')
+            });
+          } else if (b.type === 'reliquary') {
+            geometry = new THREE.SphereGeometry(0.4 + b.level * 0.2, 32, 32);
+            material = new THREE.MeshPhongMaterial({ 
+              color: b.originalColor,
+              map: textureLoader.load('https://threejs.org/examples/textures/general/stone.jpg')
+            });
+          } else if (b.type === 'sanctuary') {
+            geometry = new THREE.CylinderGeometry(0.5 + b.level * 0.2, 0.5 + b.level * 0.2, 1 + b.level * 0.2, 32);
+            material = new THREE.MeshPhongMaterial({ 
+              color: b.originalColor,
+              map: textureLoader.load('https://threejs.org/examples/textures/general/marble.jpg')
+            });
+          }
+          b.mesh = new THREE.Mesh(geometry, material);
+          b.mesh.position.set(b.x, 0.5 + b.level * 0.1, b.y);
+          b.mesh.castShadow = true;
+          b.mesh.userData = b;
+          scene.add(b.mesh);
+
+          const torchLight = new THREE.PointLight(0xffa500, 1, 2);
+          torchLight.position.set(b.x, 0.8 + b.level * 0.1, b.y);
+          scene.add(torchLight);
+        }
+      });
+    }
+
+    function createRoads() {
+      const textureLoader = new THREE.TextureLoader();
+      const dirtTexture = textureLoader.load('https://threejs.org/examples/textures/terrain/dirt.jpg');
+      dirtTexture.wrapS = dirtTexture.wrapT = THREE.RepeatWrapping;
+      dirtTexture.repeat.set(2, 2);
+      const roadMaterial = new THREE.MeshPhongMaterial({ map: dirtTexture });
+
+      const roadPaths = [
+        // Shrine (0,0) to Altar (-2,1)
+        { start: { x: 0, z: 0 }, end: { x: -2, z: 1 } },
+        // Shrine (0,0) to Forge (2,-1)
+        { start: { x: 0, z: 0 }, end: { x: 2, z: -1 } },
+        // Shrine (0,0) to Reliquary (-1,-2)
+        { start: { x: 0, z: 0 }, end: { x: -1, z: -2 } },
+        // Shrine (0,0) to Church (1,2)
+        { start: { x: 0, z: 0 }, end: { x: 1, z: 2 } },
+        // From Shrine (0,0) to Exit (5,-5)
+        { start: { x: 0, z: 0 }, end: { x: 5, z: -5 } }
+      ];
+
+      roadPaths.forEach(path => {
+        const start = path.start;
+        const end = path.end;
+        const length = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.z - start.z, 2));
+        const roadWidth = 0.5;
+
+        const roadGeometry = new THREE.PlaneGeometry(length, roadWidth);
+        roadGeometry.rotateX(-Math.PI / 2);
+
+        const road = new THREE.Mesh(roadGeometry, roadMaterial);
+        road.position.set(
+          (start.x + end.x) / 2,
+          0.01,
+          (start.z + end.z) / 2
+        );
+
+        const angle = Math.atan2(end.z - start.z, end.x - start.x);
+        road.rotation.z = angle;
+
+        scene.add(road);
+      });
+    }
+
+    function createExitSign() {
+      const exitSignGeometry = new THREE.BoxGeometry(1, 0.5, 0.1);
+      const exitSignMaterial = new THREE.MeshPhongMaterial({ color: 0x8b4513 });
+      const exitSign = new THREE.Mesh(exitSignGeometry, exitSignMaterial);
+      exitSign.position.set(5, 0.5, -5);
+      scene.add(exitSign);
+
+      const poleGeometry = new THREE.CylinderGeometry(0.05, 0.05, 1, 16);
+      const poleMaterial = new THREE.MeshPhongMaterial({ color: 0x606060 });
+      const pole = new THREE.Mesh(poleGeometry, poleMaterial);
+      pole.position.set(5, 0.25, -5);
+      scene.add(pole);
+
+      const fontLoader = new THREE.FontLoader();
+      fontLoader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', function (font) {
+        const textGeometry = new THREE.TextGeometry('WELCOME', {
+          font: font,
+          size: 0.2,
+          height: 0.05,
+        });
+        const textMaterial = new THREE.MeshPhongMaterial({ color: 0xffff00 });
+        const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+        textMesh.position.set(4.5, 0.75, -5);
+        textMesh.rotation.y = -Math.PI / 4;
+        scene.add(textMesh);
+      }, undefined, function (error) {
+        console.error('Font loading error:', error);
+      });
+    }
+
+    function createStars() {
+      const starGeometry = new THREE.SphereGeometry(0.05, 16, 16);
+      const starMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+      for (let i = 0; i < 50; i++) {
+        const star = new THREE.Mesh(starGeometry, starMaterial);
+        star.position.set(
+          (Math.random() - 0.5) * 50,
+          (Math.random() - 0.5) * 50,
+          (Math.random() - 0.5) * 50
+        );
+        scene.add(star);
+      }
+    }
+
+    function createWaterfall() {
+      const particleGeometry = new THREE.SphereGeometry(0.05, 8, 8);
+      const particleMaterial = new THREE.MeshBasicMaterial({ color: 0x00bfff });
+      for (let i = 0; i < 30; i++) {
+        const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+        particle.position.set(-4.5, 0, 0);
+        particle.velocity = new THREE.Vector3(0, -0.1 - Math.random() * 0.05, 0);
+        scene.add(particle);
+        waterfallParticles.push(particle);
+      }
+    }
+
+    function createGlowParticles() {
+      const particleGeometry = new THREE.SphereGeometry(0.1, 8, 8);
+      const particleMaterial = new THREE.MeshBasicMaterial({ color: 0xff00ff, transparent: true, opacity: 0.8 });
+      for (let i = 0; i < 20; i++) {
+        const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+        particle.position.set(
+          (Math.random() - 0.5) * 10,
+          1 + Math.random() * 2,
+          (Math.random() - 0.5) * 10
+        );
+        particle.velocity = new THREE.Vector3(
+          (Math.random() - 0.5) * 0.02,
+          (Math.random() - 0.5) * 0.02,
+          (Math.random() - 0.5) * 0.02
+        );
+        scene.add(particle);
+        glowParticles.push(particle);
+      }
+    }
+
+    function createMiningParticles(building) {
+      const particleGeometry = new THREE.SphereGeometry(0.05, 8, 8);
+      const particleMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+      for (let i = 0; i < 10; i++) {
+        const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+        particle.position.set(building.x, 0.5 + building.level * 0.1, building.y);
+        particle.velocity = new THREE.Vector3(
+          (Math.random() - 0.5) * 0.15,
+          0.1 + Math.random() * 0.1,
+          (Math.random() - 0.5) * 0.15
+        );
+        particle.life = 60;
+        scene.add(particle);
+        particles.push(particle);
+      }
+    }
+
+    function createUpgradeParticles(building) {
+      const particleGeometry = new THREE.SphereGeometry(0.05, 8, 8);
+      const particleMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+      for (let i = 0; i < 15; i++) {
+        const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+        particle.position.set(building.x, 0.5 + building.level * 0.1, building.y);
+        particle.velocity = new THREE.Vector3(
+          (Math.random() - 0.5) * 0.25,
+          0.2 + Math.random() * 0.15,
+          (Math.random() - 0.5) * 0.25
+        );
+        particle.life = 60;
+        scene.add(particle);
+        particles.push(particle);
+      }
+    }
+
+    function updateDayNightCycle() {
+      dayNightCycle += 0.001;
+      const skyboxMaterials = scene.children[0].material;
+      const light = scene.children.find(child => child instanceof THREE.DirectionalLight);
+      const intensity = Math.sin(dayNightCycle) * 0.5 + 0.5;
+      const color = intensity < 0.3 ? 0x000033 : 0x87CEEB;
+      skyboxMaterials.forEach(mat => mat.color.setHex(color));
+      light.intensity = intensity * 1.5 + 0.5;
+      isNight = intensity < 0.3;
+      const fogColor = isNight ? 0x000033 : 0x87CEEB;
+      scene.fog = new THREE.Fog(fogColor, 5, 20);
+
+      buildings.forEach(b => {
+        if (b.type === 'church' && b.glow) {
+          b.glow.material.opacity = 0.5 + 0.3 * Math.sin(dayNightCycle * 2);
+        }
+      });
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      buildings.forEach(b => {
+        if (b.type !== 'church') {
+          b.mesh.rotation.y += 0.01;
+        }
+      });
+
+      particles = particles.filter(p => p.life > 0);
+      particles.forEach(p => {
+        p.position.add(p.velocity);
+        p.life--;
+        if (p.life <= 0) scene.remove(p);
+      });
+
+      waterfallParticles.forEach(p => {
+        p.position.add(p.velocity);
+        if (p.position.y < -2) {
+          p.position.y = 0;
+          p.position.x = -4.5;
+          p.velocity.y = -0.1 - Math.random() * 0.05;
+        }
+      });
+
+      glowParticles.forEach(p => {
+        p.position.add(p.velocity);
+        if (p.position.y > 5 || p.position.y < 0) p.velocity.y *= -1;
+        if (p.position.x > 5 || p.position.x < -5) p.velocity.x *= -1;
+        if (p.position.z > 5 || p.position.z < -5) p.velocity.z *= -1;
+      });
+
+      if (composer) {
+        composer.render();
+      } else {
+        renderer.render(scene, camera);
+      }
+    }
+
+    function onWindowResize() {
+      camera.aspect = (window.innerWidth - 220) / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth - 220, window.innerHeight);
+      if (composer) {
+        composer.setSize(window.innerWidth - 220, window.innerHeight);
+      }
+    }
+
+    function onMouseMove(event) {
+      mouse.x = ((event.clientX - 220) / (window.innerWidth - 220)) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(buildings.map(b => b.mesh));
+      let tooltip = document.getElementById('tooltip');
+      buildings.forEach(b => {
+        if (b.type !== 'church' && b.mesh.material.color) {
+          b.mesh.material.color.setHex(b.originalColor);
+        }
+      });
+
+      for (let i = 0; i < intersects.length; i++) {
+        const obj = intersects[i].object;
+        if (obj.userData && obj.userData.type) {
+          const building = obj.userData;
+          if (building.type !== 'church') {
+            obj.material.color.setHex(0xffffff);
+          }
+          tooltip.style.display = 'block';
+          tooltip.style.left = `${event.clientX}px`;
+          tooltip.style.top = `${event.clientY}px`;
+          tooltip.innerText = `${building.type} Lvl ${building.level}\nProduction: ${building.production}/s${building.type === 'church' && !isNight ? ' (Day Bonus x2)' : ''}`;
+          break;
+        } else {
+          tooltip.style.display = 'none';
+        }
+      }
+    }
+
+    function onMouseClick(event) {
+      event.preventDefault();
+      mouse.x = ((event.clientX - 220) / (window.innerWidth - 220)) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(buildings.map(b => b.mesh));
+      for (let i = 0; i < intersects.length; i++) {
+        const obj = intersects[i].object;
+        if (obj.userData && obj.userData.type) {
+          const building = obj.userData;
+          if (holyFlame >= 50 * building.level) {
+            holyFlame -= 50 * building.level;
+            building.level++;
+            building.production += 0.5;
+            if (building.type !== 'church') {
+              scene.remove(building.mesh);
+              let geometry;
+              if (building.type === 'shrine') {
+                const shape = new THREE.Shape();
+                shape.moveTo(0, 0);
+                shape.lineTo(0.5, 0);
+                shape.lineTo(0.25, 0.5);
+                shape.lineTo(0, 0);
+                geometry = new THREE.ExtrudeGeometry(shape, { depth: 0.5 + building.level * 0.2, bevelEnabled: false });
+                building.mesh = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({ color: building.originalColor, map: new THREE.TextureLoader().load('https://threejs.org/examples/textures/general/stone.jpg') }));
+              } else if (building.type === 'altar') {
+                geometry = new THREE.CylinderGeometry(0.4 + building.level * 0.1, 0.4 + building.level * 0.1, 0.8 + building.level * 0.2, 32);
+                building.mesh = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({ color: building.originalColor, map: new THREE.TextureLoader().load('https://threejs.org/examples/textures/general/marble.jpg') }));
+              } else if (building.type === 'forge') {
+                geometry = new THREE.BoxGeometry(0.6 + building.level * 0.2, 0.6 + building.level * 0.2, 0.6 + building.level * 0.2);
+                building.mesh = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({ color: building.originalColor, map: new THREE.TextureLoader().load('https://threejs.org/examples/textures/general/metal.jpg') }));
+              } else if (building.type === 'reliquary') {
+                geometry = new THREE.SphereGeometry(0.4 + building.level * 0.2, 32, 32);
+                building.mesh = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({ color: building.originalColor, map: new THREE.TextureLoader().load('https://threejs.org/examples/textures/general/stone.jpg') }));
+              } else if (building.type === 'sanctuary') {
+                geometry = new THREE.CylinderGeometry(0.5 + building.level * 0.2, 0.5 + building.level * 0.2, 1 + building.level * 0.2, 32);
+                building.mesh = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({ color: building.originalColor, map: new THREE.TextureLoader().load('https://threejs.org/examples/textures/general/marble.jpg') }));
+              }
+              building.mesh.position.set(building.x, 0.5 + building.level * 0.1, building.y);
+              building.mesh.castShadow = true;
+              building.mesh.userData = building;
+              scene.add(building.mesh);
+
+              const torchLight = new THREE.PointLight(0xffa500, 1, 2);
+              torchLight.position.set(building.x, 0.8 + building.level * 0.1, building.y);
+              scene.add(torchLight);
+            } else {
+              building.sprite.position.set(building.x, 1 + building.level * 0.1, building.y);
+              building.sprite.scale.set(2 + building.level * 0.2, 2 + building.level * 0.2, 1);
+              building.mesh.position.set(building.x, 0.5 + building.level * 0.1, building.y);
+              building.glow.position.set(building.x, 1 + building.level * 0.1, building.y);
+              building.glow.scale.set(1 + building.level * 0.1, 1 + building.level * 0.1, 1 + building.level * 0.1);
+            }
+
+            createUpgradeParticles(building);
+            playUpgradeSound();
+            showNotification(`Upgraded ${building.type} to level ${building.level}!`);
+            updateInfoBar();
+            checkPlayerLevel();
+            updateQuests(building.level, 'churchUpgrade');
+            updateAchievements();
+          } else {
+            showNotification(`Need ${50 * building.level} $HOLYFLAME to upgrade!`);
+          }
+          break;
+        }
+      }
+    }
+
+    function mineResources() {
+      let prof = professions[currentProfession];
+      let holyFlameGain = 0;
+      let relicGain = 0;
+      let nightBonus = isNight ? 1.5 : 1;
+      buildings.forEach(b => {
+        let production = b.production;
+        if (b.type === 'church' && !isNight) {
+          production *= 2;
+          showNotification('Church Day Bonus! Production x2');
+        }
+        if (b.type === 'reliquary') {
+          relicGain += production * prof.relicBonus * eventMultiplier * nightBonus;
+        } else {
+          holyFlameGain += production * prof.holyFlameBonus * eventMultiplier * nightBonus;
+        }
+        createMiningParticles(b);
+      });
+      holyFlame += holyFlameGain;
+      totalHolyFlameMined += holyFlameGain;
+      relics += relicGain;
+      playMiningSound();
+      showNotification(`Mined resources! +${holyFlameGain.toFixed(1)} $HOLYFLAME, +${relicGain.toFixed(1)} Relics${isNight ? ' (Night Bonus x1.5)' : ''}`);
+      updateInfoBar();
+      updateMarketPrice();
+      checkPlayerLevel();
+      updateQuests(holyFlameGain, 'holyFlame');
+      updateAchievements();
+    }
+
+    function checkPlayerLevel() {
+      let newLevel = Math.floor(totalHolyFlameMined / 100) + 1;
+      if (newLevel > playerLevel) {
+        playerLevel = newLevel;
+        showNotification(`Level Up! You are now Level ${playerLevel}!`);
+        if (playerLevel === 5) {
+          buildings.push({
+            x: 2, y: 1, type: 'sanctuary', level: 1, production: 1.5, mesh: null, originalColor: 0xFFD700
+          });
+          createBuildings();
+          createRoads();
+          showNotification('Unlocked a new building: Sanctuary!');
+        }
+      }
+    }
+
+    function checkRandomEvent() {
+      if (Math.random() < 0.3 && !eventActive) {
+        eventActive = true;
+        eventMultiplier = 2;
+        showNotification('Divine Blessing! Production doubled for 30 seconds!');
+        setTimeout(() => {
+          eventActive = false;
+          eventMultiplier = 1;
+          showNotification('Divine Blessing has ended.');
+        }, 30000);
+      }
+    }
+
+    function updateMarketPrice() {
+      market.relicPrice = 10 * (market.demand / market.supply);
+      if (market.relicPrice < 5) market.relicPrice = 5;
+      if (market.relicPrice > 50) market.relicPrice = 50;
+    }
+
+    function updateLeaderboard() {
+      leaderboard[3].total = Math.floor(totalHolyFlameMined);
+      leaderboard.sort((a, b) => b.total - a.total);
+      let leaderboardText = leaderboard.map((entry, index) => `${index + 1}. ${entry.name}: ${entry.total} $HOLYFLAME`).join('<br>');
+      document.getElementById('leaderboard').innerHTML = leaderboardText;
+    }
+
+    function updateQuests(amount, type) {
+      quests.forEach(quest => {
+        if (quest.type === type && !quest.completed) {
+          if (type === 'churchUpgrade') {
+            quest.progress = amount;
+          } else {
+            quest.progress += amount;
+          }
+          if (quest.progress >= quest.target) {
+            quest.completed = true;
+            relics += quest.reward;
+            showNotification(`Quest Completed: ${quest.description}! Reward: ${quest.reward} Relics`);
+            updateInfoBar();
+          }
+        }
+      });
+    }
+
+    function updateQuestsUI() {
+      let questsText = quests.map(quest => 
+        quest.completed ? 
+        `${quest.description}: Completed` : 
+        `${quest.description}: ${Math.min(quest.progress, quest.target)}/${quest.target}`
+      ).join('<br>');
+      document.getElementById('quests').innerHTML = questsText;
+    }
+
+    function updateAchievements() {
+      achievements.forEach(ach => {
+        if (!ach.completed) {
+          if (ach.id === 1) {
+            ach.progress = Math.max(...buildings.map(b => b.level));
+          } else if (ach.id === 2) {
+            ach.progress = totalHolyFlameMined;
+          }
+          if (ach.progress >= ach.target) {
+            ach.completed = true;
+            showNotification(`Achievement Unlocked: ${ach.description}!`);
+          }
+        }
+      });
+    }
+
+    function updateAchievementsUI() {
+      let achievementsText = achievements.map(ach => 
+        ach.completed ? 
+        `${ach.description}: Unlocked` : 
+        `${ach.description}: ${Math.min(ach.progress, ach.target)}/${ach.target}`
+      ).join('<br>');
+      document.getElementById('achievements').innerHTML = achievementsText;
+    }
+
+    function sendChatMessage() {
+      let input = document.getElementById('chat-input');
+      let message = input.value.trim();
+      if (message) {
+        let chatBox = document.getElementById('chat-box');
+        chatBox.innerHTML += `<div>You: ${message}</div>`;
+        chatBox.scrollTop = chatBox.scrollHeight;
+        input.value = '';
+        setTimeout(() => {
+          chatBox.innerHTML += `<div>Player1: Nice work! Keep mining!</div>`;
+          chatBox.scrollTop = chatBox.scrollHeight;
+        }, 1000);
+      }
+    }
+
+    function buyRelics() {
+      let amount = parseInt(document.getElementById('buyRelics').value);
+      let cost = amount * market.relicPrice;
+      if (holyFlame >= cost) {
+        holyFlame -= cost;
+        relics += amount;
+        market.supply += amount;
+        market.demand -= amount;
+        showNotification(`Bought ${amount} relics for ${cost} $HOLYFLAME!`);
+        updateInfoBar();
+      } else {
+        showNotification(`Need ${cost} $HOLYFLAME to buy ${amount} relics!`);
+      }
+    }
+
+    function sellRelics() {
+      let amount = parseInt(document.getElementById('sellRelics').value);
+      if (relics >= amount) {
+        relics -= amount;
+        holyFlame += amount * market.relicPrice;
+        market.supply -= amount;
+        market.demand += amount;
+        showNotification(`Sold ${amount} relics for ${amount * market.relicPrice} $HOLYFLAME!`);
+        updateInfoBar();
+      } else {
+        showNotification(`Not enough relics! You have ${relics}.`);
+      }
+    }
+
+    function proposeChange() {
+      if (relics >= 10) {
+        showNotification('Proposed a change in the Holy Council!');
+      } else {
+        showNotification('Need 10 relics to propose a change!');
+      }
+    }
+
+    function voteOnPrice() {
+      if (relics >= 5) {
+        let newPrice = parseInt(document.getElementById('votePrice').value);
+        votes.priceVotes.push(newPrice);
+        votes.totalVotes++;
+        relics -= 5;
+        if (votes.totalVotes >= 3) {
+          let avgPrice = votes.priceVotes.reduce((sum, val) => sum + val, 0) / votes.priceVotes.length;
+          market.relicPrice = avgPrice;
+          votes.priceVotes = [];
+          votes.totalVotes = 0;
+          showNotification(`New relic price set to ${avgPrice.toFixed(2)} $HOLYFLAME by vote!`);
+        } else {
+          showNotification(`Voted for relic price of ${newPrice} $HOLYFLAME! (${votes.totalVotes}/3 votes)`);
+        }
+        updateInfoBar();
+      } else {
+        showNotification('Need 5 relics to vote!');
+      }
+    }
+
+    function burnRelics() {
+      let amount = parseInt(document.getElementById('burnRelics').value);
+      if (relics >= amount) {
+        relics -= amount;
+        let reward = amount * 20 - 0.001;
+        holyFlame += reward;
+        showNotification(`Burned ${amount} relics for ${reward.toFixed(3)} $HOLYFLAME! (Fee: 0.001)`);
+        updateInfoBar();
+      } else {
+        showNotification(`Not enough relics! You have ${relics}.`);
+      }
+    }
+
+    function craftRelic() {
+      if (holyFlame >= 100 && relics >= 10) {
+        holyFlame -= 100;
+        relics -= 10;
+        craftedRelics++;
+        showNotification(`Crafted a new relic! Total crafted: ${craftedRelics}`);
+        updateInfoBar();
+        updateQuests(1, 'craftRelic');
+      } else {
+        showNotification('Need 100 $HOLYFLAME and 10 Relics to craft!');
+      }
+    }
+
+    function claimHolyFlame() {
+      holyFlame += 10;
+      totalHolyFlameMined += 10;
+      showNotification('Claimed 10 $HOLYFLAME!');
+      updateInfoBar();
+      checkPlayerLevel();
+      updateQuests(10, 'holyFlame');
+      updateAchievements();
+    }
+
+    function changeProfession() {
+      if (currentProfession === 'Monk') {
+        currentProfession = 'Scribe';
+      } else if (currentProfession === 'Scribe') {
+        currentProfession = 'Smith';
+      } else {
+        currentProfession = 'Monk';
+      }
+      updateProfessionButton();
+      showNotification(`Profession changed to ${currentProfession}! Bonuses: HolyFlame x${professions[currentProfession].holyFlameBonus}, Relics x${professions[currentProfession].relicBonus}`);
+    }
+
+    function updateProfessionButton() {
+      document.querySelector('button[onclick="changeProfession()"]').innerText = `Profession: ${currentProfession}`;
+    }
+
+    function viewInventory() {
+      showNotification(`Inventory: ${Math.floor(holyFlame)} $HOLYFLAME, ${Math.floor(relics)} Relics, ${craftedRelics} Crafted Relics`);
+    }
+
+    function changePFP() {
+      showNotification('PFP changed!');
+      updateInfoBar();
+    }
+
+    function changeName() {
+      showNotification('Name changed!');
+      updateInfoBar();
+    }
+
+    function viewMonastery() {
+      showNotification('Viewing Monastery!');
+    }
+
+    function viewMarketplace() {
+      showNotification(`Sacred Market: 1 Relic = ${market.relicPrice.toFixed(2)} $HOLYFLAME`);
+    }
+
+    function saveGame() {
+      const gameState = {
+        holyFlame,
+        relics,
+        craftedRelics,
+        playerLevel,
+        totalHolyFlameMined,
+        currentProfession,
+        buildings: buildings.map(b => ({
+          x: b.x,
+          y: b.y,
+          type: b.type,
+          level: b.level,
+          production: b.production,
+          originalColor: b.originalColor
+        })),
+        leaderboard,
+        quests,
+        achievements
+      };
+      localStorage.setItem('holyFlameGameState', JSON.stringify(gameState));
+      showNotification('Game saved!');
+    }
+
+    function loadGame() {
+      const savedState = localStorage.getItem('holyFlameGameState');
+      if (savedState) {
+        const gameState = JSON.parse(savedState);
+        holyFlame = gameState.holyFlame;
+        relics = gameState.relics;
+        craftedRelics = gameState.craftedRelics;
+        playerLevel = gameState.playerLevel;
+        totalHolyFlameMined = gameState.totalHolyFlameMined;
+        currentProfession = gameState.currentProfession;
+        buildings = gameState.buildings.map(b => ({
+          x: b.x,
+          y: b.y,
+          type: b.type,
+          level: b.level,
+          production: b.production,
+          mesh: null,
+          sprite: null,
+          glow: null,
+          originalColor: b.originalColor
+        }));
+        leaderboard = gameState.leaderboard;
+        quests = gameState.quests;
+        achievements = gameState.achievements;
+
+        scene.children = scene.children.filter(child => !(child instanceof THREE.Mesh && child.userData));
+        createBuildings();
+        createRoads();
+        createExitSign();
+        updateInfoBar();
+        updateProfessionButton();
+        updateLeaderboard();
+        updateQuestsUI();
+        updateAchievementsUI();
+        showNotification('Game loaded!');
+      } else {
+        showNotification('No saved game found!');
+      }
+    }
+
+    function updateInfoBar() {
+      document.querySelector('.info-bar').innerText = `PFP: Guest | ${Math.floor(holyFlame)} $HOLYFLAME | Relics: ${Math.floor(relics)} | Lvl ${playerLevel} | v0.1`;
+    }
+
+    function showNotification(message) {
+      let notification = document.getElementById('notification');
+      notification.innerText = message;
+      notification.style.display = 'block';
+      setTimeout(() => {
+        notification.style.display = 'none';
+      }, 2000);
+    }
+
+    function onKeyDown(event) {
+      document.getElementById('tutorial').style.display = 'none';
+    }
+
+    function playBackgroundMusic() {
+      const listener = new THREE.AudioListener();
+      camera.add(listener);
+      backgroundMusic = new THREE.Audio(listener);
+      const audioLoader = new THREE.AudioLoader();
+      audioLoader.load(
+        'https://www.musicforvideo.com/files/music/2018/03/Scott_Holmes_-_05_-_Inspirational_Outlook.mp3',
+        function(buffer) {
+          backgroundMusic.setBuffer(buffer);
+          backgroundMusic.setLoop(true);
+          backgroundMusic.setVolume(0.1);
+          backgroundMusic.play();
+        },
+        undefined,
+        function(error) {
+          console.error('Error loading background music:', error);
+        }
+      );
+    }
+
+    function playMiningSound() {
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      oscillator.type = 'triangle';
+      oscillator.frequency.setValueAtTime(440 + Math.random() * 100, audioContext.currentTime);
+      gain.gain.setValueAtTime(0.15, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      oscillator.connect(gain);
+      gain.connect(audioContext.destination);
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.5);
+    }
+
+    function playUpgradeSound() {
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(880 + Math.random() * 200, audioContext.currentTime);
+      gain.gain.setValueAtTime(0.25, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.7);
+      oscillator.connect(gain);
+      gain.connect(audioContext.destination);
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.7);
+    }
+
+    init();
+  </script>
+</body>
+</html>
