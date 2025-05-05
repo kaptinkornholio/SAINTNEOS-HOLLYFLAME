@@ -371,44 +371,40 @@
           b.mesh.userData = b;
           scene.add(b.mesh);
 
-          // Try to load the church model
-          loader.load(
-            'https://raw.githubusercontent.com/kaptinkornholio/SAINTNEOS-HOLLYFLAME/main/models/church_pixel_art.glb',
-            (gltf) => {
-              if (b.sprite) scene.remove(b.sprite); // Remove any previous sprite
-              b.sprite = gltf.scene;
-              b.sprite.scale.set(0.5 + b.level * 0.1, 0.5 + b.level * 0.1, 0.5 + b.level * 0.1);
-              b.sprite.position.set(b.x, 1 + b.level * 0.1, b.y);
-              b.sprite.userData = b;
-              scene.add(b.sprite);
+          const geometry = new THREE.BoxGeometry(1, 1 + b.level * 0.2, 1);
+          const material = new THREE.MeshPhongMaterial({ color: 0x800080 });
+          b.sprite = new THREE.Mesh(geometry, material);
+          b.sprite.position.set(b.x, 1 + b.level * 0.1, b.y);
+          b.sprite.userData = b;
+          scene.add(b.sprite);
 
-              // Add glow effect
-              const glowGeometry = new THREE.SphereGeometry(0.5, 16, 16);
-              const glowMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.5 });
-              b.glow = new THREE.Mesh(glowGeometry, glowMaterial);
-              b.glow.position.set(b.x, 1 + b.level * 0.1, b.y);
-              scene.add(b.glow);
-            },
-            undefined,
-            (error) => {
-              console.error(`Error loading church model: ${error}`);
-              // Fallback to a basic geometry if the model fails to load
-              if (!b.sprite) {
-                const geometry = new THREE.BoxGeometry(1, 1 + b.level * 0.2, 1);
-                const material = new THREE.MeshPhongMaterial({ color: 0x800080 });
-                b.sprite = new THREE.Mesh(geometry, material);
+          const glowGeometry = new THREE.SphereGeometry(0.5, 16, 16);
+          const glowMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.5 });
+          b.glow = new THREE.Mesh(glowGeometry, glowMaterial);
+          b.glow.position.set(b.x, 1 + b.level * 0.1, b.y);
+          scene.add(b.glow);
+
+          // Try to load the church model
+          const churchModelPath = 'https://raw.githubusercontent.com/kaptinkornholio/SAINTNEOS-HOLLYFLAME/main/models/church_pixel_art.glb';
+          console.log(`Attempting to load church model from: ${churchModelPath}`);
+          setTimeout(() => {
+            loader.load(
+              churchModelPath,
+              (gltf) => {
+                console.log('Church model loaded successfully');
+                if (b.sprite) scene.remove(b.sprite); // Remove fallback
+                b.sprite = gltf.scene;
+                b.sprite.scale.set(0.5 + b.level * 0.1, 0.5 + b.level * 0.1, 0.5 + b.level * 0.1);
                 b.sprite.position.set(b.x, 1 + b.level * 0.1, b.y);
                 b.sprite.userData = b;
                 scene.add(b.sprite);
-
-                const glowGeometry = new THREE.SphereGeometry(0.5, 16, 16);
-                const glowMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.5 });
-                b.glow = new THREE.Mesh(glowGeometry, glowMaterial);
-                b.glow.position.set(b.x, 1 + b.level * 0.1, b.y);
-                scene.add(b.glow);
+              },
+              undefined,
+              (error) => {
+                console.error(`Error loading church model: ${error.message}`);
               }
-            }
-          );
+            );
+          }, 1000);
         } else {
           // Define building-specific geometries for fallback
           const geometries = {
@@ -445,23 +441,27 @@
           const modelPath = modelPaths[b.type] || modelPaths['shrine'];
 
           // Try to load the model, replacing the fallback if successful
-          loader.load(
-            modelPath,
-            (gltf) => {
-              scene.remove(b.mesh); // Remove the fallback mesh
-              b.mesh = gltf.scene;
-              b.mesh.scale.set(0.5 + b.level * 0.1, 0.5 + b.level * 0.1, 0.5 + b.level * 0.1);
-              b.mesh.position.set(b.x, 0.5 + b.level * 0.1, b.y);
-              b.mesh.castShadow = true;
-              b.mesh.userData = b;
-              scene.add(b.mesh);
+          console.log(`Attempting to load ${b.type} model from: ${modelPath}`);
+          setTimeout(() => {
+            loader.load(
+              modelPath,
+              (gltf) => {
+                console.log(`${b.type} model loaded successfully`);
+                scene.remove(b.mesh); // Remove the fallback mesh
+                b.mesh = gltf.scene;
+                b.mesh.scale.set(0.5 + b.level * 0.1, 0.5 + b.level * 0.1, 0.5 + b.level * 0.1);
+                b.mesh.position.set(b.x, 0.5 + b.level * 0.1, b.y);
+                b.mesh.castShadow = true;
+                b.mesh.userData = b;
+                scene.add(b.mesh);
 
-              // Update torch light position
-              torchLight.position.set(b.x, 0.8 + b.level * 0.1, b.y);
-            },
-            undefined,
-            (error) => console.error(`Error loading ${b.type} model at ${modelPath}: ${error}`)
-          );
+                // Update torch light position
+                torchLight.position.set(b.x, 0.8 + b.level * 0.1, b.y);
+              },
+              undefined,
+              (error) => console.error(`Error loading ${b.type} model at ${modelPath}: ${error.message}`)
+            );
+          }, 1000);
         }
       });
     }
@@ -773,7 +773,7 @@
                   torchLight.position.set(building.x, 0.8 + building.level * 0.1, building.y);
                 },
                 undefined,
-                (error) => console.error(`Error loading ${building.type} model on upgrade: ${error}`)
+                (error) => console.error(`Error loading ${building.type} model on upgrade: ${error.message}`)
               );
             } else {
               scene.remove(building.sprite);
@@ -789,7 +789,7 @@
                 },
                 undefined,
                 (error) => {
-                  console.error(`Error loading church model on upgrade: ${error}`);
+                  console.error(`Error loading church model on upgrade: ${error.message}`);
                   building.sprite = new THREE.Mesh(
                     new THREE.BoxGeometry(1, 1 + building.level * 0.2, 1),
                     new THREE.MeshPhongMaterial({ color: 0x800080 })
