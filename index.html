@@ -130,6 +130,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/js/postprocessing/RenderPass.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/js/postprocessing/UnrealBloomPass.js"></script>
   <script src="https://unpkg.com/three@0.134.0/examples/js/loaders/FontLoader.js"></script>
+  <script src="https://unpkg.com/three@0.134.0/examples/js/loaders/GLTFLoader.js"></script>
 </head>
 <body>
   <div class="game-container">
@@ -357,81 +358,68 @@
     }
 
     function createBuildings() {
+      const loader = new THREE.GLTFLoader();
       const textureLoader = new THREE.TextureLoader();
+
       buildings.forEach(b => {
-        let geometry, material;
         if (b.type === 'church') {
-          const spriteTexture = textureLoader.load(
-            'https://example.com/church-sprite.png',
-            () => console.log('Church sprite texture loaded successfully'),
+          // Load church model
+          loader.load(
+            'https://raw.githubusercontent.com/kaptinkornholio/SAINTNEOS-HOLLYFLAME/main/models/church_pixel_art.glb',
+            (gltf) => {
+              b.sprite = gltf.scene;
+              b.sprite.scale.set(0.5 + b.level * 0.1, 0.5 + b.level * 0.1, 0.5 + b.level * 0.1);
+              b.sprite.position.set(b.x, 1 + b.level * 0.1, b.y);
+              b.sprite.userData = b;
+              scene.add(b.sprite);
+
+              // Create hitbox for interaction
+              const hitboxGeometry = new THREE.BoxGeometry(1, 1, 1);
+              const hitboxMaterial = new THREE.MeshBasicMaterial({ visible: false });
+              b.mesh = new THREE.Mesh(hitboxGeometry, hitboxMaterial);
+              b.mesh.position.set(b.x, 0.5 + b.level * 0.1, b.y);
+              b.mesh.userData = b;
+              scene.add(b.mesh);
+
+              // Add glow effect
+              const glowGeometry = new THREE.SphereGeometry(0.5, 16, 16);
+              const glowMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.5 });
+              b.glow = new THREE.Mesh(glowGeometry, glowMaterial);
+              b.glow.position.set(b.x, 1 + b.level * 0.1, b.y);
+              scene.add(b.glow);
+            },
             undefined,
-            (error) => console.error('Error loading church sprite texture:', error)
+            (error) => console.error(`Error loading church model: ${error}`)
           );
-          material = new THREE.SpriteMaterial({ map: spriteTexture, transparent: true });
-          b.sprite = new THREE.Sprite(material);
-          b.sprite.scale.set(2, 2, 1);
-          b.sprite.position.set(b.x, 1 + b.level * 0.1, b.y);
-          b.sprite.userData = b;
-          scene.add(b.sprite);
-
-          const hitboxGeometry = new THREE.BoxGeometry(1, 1, 1);
-          const hitboxMaterial = new THREE.MeshBasicMaterial({ visible: false });
-          b.mesh = new THREE.Mesh(hitboxGeometry, hitboxMaterial);
-          b.mesh.position.set(b.x, 0.5 + b.level * 0.1, b.y);
-          b.mesh.userData = b;
-          scene.add(b.mesh);
-
-          const glowGeometry = new THREE.SphereGeometry(0.5, 16, 16);
-          const glowMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.5 });
-          b.glow = new THREE.Mesh(glowGeometry, glowMaterial);
-          b.glow.position.set(b.x, 1 + b.level * 0.1, b.y);
-          scene.add(b.glow);
         } else {
-          if (b.type === 'shrine') {
-            const shape = new THREE.Shape();
-            shape.moveTo(0, 0);
-            shape.lineTo(0.5, 0);
-            shape.lineTo(0.25, 0.5);
-            shape.lineTo(0, 0);
-            geometry = new THREE.ExtrudeGeometry(shape, { depth: 0.5 + b.level * 0.2, bevelEnabled: false });
-            material = new THREE.MeshPhongMaterial({ 
-              color: b.originalColor,
-              map: textureLoader.load('https://threejs.org/examples/textures/general/stone.jpg')
-            });
-          } else if (b.type === 'altar') {
-            geometry = new THREE.CylinderGeometry(0.4 + b.level * 0.1, 0.4 + b.level * 0.1, 0.8 + b.level * 0.2, 32);
-            material = new THREE.MeshPhongMaterial({ 
-              color: b.originalColor,
-              map: textureLoader.load('https://threejs.org/examples/textures/general/marble.jpg')
-            });
-          } else if (b.type === 'forge') {
-            geometry = new THREE.BoxGeometry(0.6 + b.level * 0.2, 0.6 + b.level * 0.2, 0.6 + b.level * 0.2);
-            material = new THREE.MeshPhongMaterial({ 
-              color: b.originalColor,
-              map: textureLoader.load('https://threejs.org/examples/textures/general/metal.jpg')
-            });
-          } else if (b.type === 'reliquary') {
-            geometry = new THREE.SphereGeometry(0.4 + b.level * 0.2, 32, 32);
-            material = new THREE.MeshPhongMaterial({ 
-              color: b.originalColor,
-              map: textureLoader.load('https://threejs.org/examples/textures/general/stone.jpg')
-            });
-          } else if (b.type === 'sanctuary') {
-            geometry = new THREE.CylinderGeometry(0.5 + b.level * 0.2, 0.5 + b.level * 0.2, 1 + b.level * 0.2, 32);
-            material = new THREE.MeshPhongMaterial({ 
-              color: b.originalColor,
-              map: textureLoader.load('https://threejs.org/examples/textures/general/marble.jpg')
-            });
-          }
-          b.mesh = new THREE.Mesh(geometry, material);
-          b.mesh.position.set(b.x, 0.5 + b.level * 0.1, b.y);
-          b.mesh.castShadow = true;
-          b.mesh.userData = b;
-          scene.add(b.mesh);
+          // Map building type to its corresponding model
+          const modelPaths = {
+            'shrine': 'https://raw.githubusercontent.com/kaptinkornholio/SAINTNEOS-HOLLYFLAME/main/models/sky_giants_-_the_first_holy_key.glb',
+            'altar': 'https://raw.githubusercontent.com/kaptinkornholio/SAINTNEOS-HOLLYFLAME/main/models/altar.glb',
+            'forge': 'https://raw.githubusercontent.com/kaptinkornholio/SAINTNEOS-HOLLYFLAME/main/models/forge.glb',
+            'reliquary': 'https://raw.githubusercontent.com/kaptinkornholio/SAINTNEOS-HOLLYFLAME/main/models/reliquary.glb',
+            'sanctuary': 'https://raw.githubusercontent.com/kaptinkornholio/SAINTNEOS-HOLLYFLAME/main/models/sanctuary.glb'
+          };
 
-          const torchLight = new THREE.PointLight(0xffa500, 1, 2);
-          torchLight.position.set(b.x, 0.8 + b.level * 0.1, b.y);
-          scene.add(torchLight);
+          const modelPath = modelPaths[b.type] || modelPaths['shrine']; // Fallback to shrine if type not found
+
+          loader.load(
+            modelPath,
+            (gltf) => {
+              b.mesh = gltf.scene;
+              b.mesh.scale.set(0.5 + b.level * 0.1, 0.5 + b.level * 0.1, 0.5 + b.level * 0.1);
+              b.mesh.position.set(b.x, 0.5 + b.level * 0.1, b.y);
+              b.mesh.castShadow = true;
+              b.mesh.userData = b;
+              scene.add(b.mesh);
+
+              const torchLight = new THREE.PointLight(0xffa500, 1, 2);
+              torchLight.position.set(b.x, 0.8 + b.level * 0.1, b.y);
+              scene.add(torchLight);
+            },
+            undefined,
+            (error) => console.error(`Error loading ${b.type} model: ${error}`)
+          );
         }
       });
     }
@@ -612,7 +600,7 @@
       requestAnimationFrame(animate);
       controls.update();
       buildings.forEach(b => {
-        if (b.type !== 'church') {
+        if (b.type !== 'church' && b.mesh) {
           b.mesh.rotation.y += 0.01;
         }
       });
@@ -661,11 +649,11 @@
       mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
       raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects(buildings.map(b => b.mesh));
+      const intersects = raycaster.intersectObjects(buildings.map(b => b.mesh).filter(Boolean));
       let tooltip = document.getElementById('tooltip');
       buildings.forEach(b => {
-        if (b.type !== 'church' && b.mesh.material.color) {
-          b.mesh.material.color.setHex(b.originalColor);
+        if (b.type !== 'church' && b.mesh && b.mesh.children[0] && b.mesh.children[0].material) {
+          b.mesh.children[0].material.color.setHex(b.originalColor);
         }
       });
 
@@ -673,8 +661,8 @@
         const obj = intersects[i].object;
         if (obj.userData && obj.userData.type) {
           const building = obj.userData;
-          if (building.type !== 'church') {
-            obj.material.color.setHex(0xffffff);
+          if (building.type !== 'church' && obj.children[0] && obj.children[0].material) {
+            obj.children[0].material.color.setHex(0xffffff);
           }
           tooltip.style.display = 'block';
           tooltip.style.left = `${event.clientX}px`;
@@ -693,7 +681,7 @@
       mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
       raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects(buildings.map(b => b.mesh));
+      const intersects = raycaster.intersectObjects(buildings.map(b => b.mesh).filter(Boolean));
       for (let i = 0; i < intersects.length; i++) {
         const obj = intersects[i].object;
         if (obj.userData && obj.userData.type) {
@@ -704,39 +692,47 @@
             building.production += 0.5;
             if (building.type !== 'church') {
               scene.remove(building.mesh);
-              let geometry;
-              if (building.type === 'shrine') {
-                const shape = new THREE.Shape();
-                shape.moveTo(0, 0);
-                shape.lineTo(0.5, 0);
-                shape.lineTo(0.25, 0.5);
-                shape.lineTo(0, 0);
-                geometry = new THREE.ExtrudeGeometry(shape, { depth: 0.5 + building.level * 0.2, bevelEnabled: false });
-                building.mesh = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({ color: building.originalColor, map: new THREE.TextureLoader().load('https://threejs.org/examples/textures/general/stone.jpg') }));
-              } else if (building.type === 'altar') {
-                geometry = new THREE.CylinderGeometry(0.4 + building.level * 0.1, 0.4 + building.level * 0.1, 0.8 + building.level * 0.2, 32);
-                building.mesh = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({ color: building.originalColor, map: new THREE.TextureLoader().load('https://threejs.org/examples/textures/general/marble.jpg') }));
-              } else if (building.type === 'forge') {
-                geometry = new THREE.BoxGeometry(0.6 + building.level * 0.2, 0.6 + building.level * 0.2, 0.6 + building.level * 0.2);
-                building.mesh = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({ color: building.originalColor, map: new THREE.TextureLoader().load('https://threejs.org/examples/textures/general/metal.jpg') }));
-              } else if (building.type === 'reliquary') {
-                geometry = new THREE.SphereGeometry(0.4 + building.level * 0.2, 32, 32);
-                building.mesh = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({ color: building.originalColor, map: new THREE.TextureLoader().load('https://threejs.org/examples/textures/general/stone.jpg') }));
-              } else if (building.type === 'sanctuary') {
-                geometry = new THREE.CylinderGeometry(0.5 + building.level * 0.2, 0.5 + building.level * 0.2, 1 + building.level * 0.2, 32);
-                building.mesh = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({ color: building.originalColor, map: new THREE.TextureLoader().load('https://threejs.org/examples/textures/general/marble.jpg') }));
-              }
-              building.mesh.position.set(building.x, 0.5 + building.level * 0.1, building.y);
-              building.mesh.castShadow = true;
-              building.mesh.userData = building;
-              scene.add(building.mesh);
+              const loader = new THREE.GLTFLoader();
+              const modelPaths = {
+                'shrine': 'https://raw.githubusercontent.com/kaptinkornholio/SAINTNEOS-HOLLYFLAME/main/models/sky_giants_-_the_first_holy_key.glb',
+                'altar': 'https://raw.githubusercontent.com/kaptinkornholio/SAINTNEOS-HOLLYFLAME/main/models/altar.glb',
+                'forge': 'https://raw.githubusercontent.com/kaptinkornholio/SAINTNEOS-HOLLYFLAME/main/models/forge.glb',
+                'reliquary': 'https://raw.githubusercontent.com/kaptinkornholio/SAINTNEOS-HOLLYFLAME/main/models/reliquary.glb',
+                'sanctuary': 'https://raw.githubusercontent.com/kaptinkornholio/SAINTNEOS-HOLLYFLAME/main/models/sanctuary.glb'
+              };
+              const modelPath = modelPaths[building.type] || modelPaths['shrine'];
+              loader.load(
+                modelPath,
+                (gltf) => {
+                  building.mesh = gltf.scene;
+                  building.mesh.scale.set(0.5 + building.level * 0.1, 0.5 + building.level * 0.1, 0.5 + building.level * 0.1);
+                  building.mesh.position.set(building.x, 0.5 + building.level * 0.1, building.y);
+                  building.mesh.castShadow = true;
+                  building.mesh.userData = building;
+                  scene.add(building.mesh);
 
-              const torchLight = new THREE.PointLight(0xffa500, 1, 2);
-              torchLight.position.set(building.x, 0.8 + building.level * 0.1, building.y);
-              scene.add(torchLight);
+                  const torchLight = new THREE.PointLight(0xffa500, 1, 2);
+                  torchLight.position.set(building.x, 0.8 + building.level * 0.1, building.y);
+                  scene.add(torchLight);
+                },
+                undefined,
+                (error) => console.error(`Error loading ${building.type} model on upgrade: ${error}`)
+              );
             } else {
-              building.sprite.position.set(building.x, 1 + building.level * 0.1, building.y);
-              building.sprite.scale.set(2 + building.level * 0.2, 2 + building.level * 0.2, 1);
+              scene.remove(building.sprite);
+              const loader = new THREE.GLTFLoader();
+              loader.load(
+                'https://raw.githubusercontent.com/kaptinkornholio/SAINTNEOS-HOLLYFLAME/main/models/church_pixel_art.glb',
+                (gltf) => {
+                  building.sprite = gltf.scene;
+                  building.sprite.scale.set(0.5 + building.level * 0.1, 0.5 + building.level * 0.1, 0.5 + building.level * 0.1);
+                  building.sprite.position.set(building.x, 1 + building.level * 0.1, building.y);
+                  building.sprite.userData = building;
+                  scene.add(building.sprite);
+                },
+                undefined,
+                (error) => console.error(`Error loading church model on upgrade: ${error}`)
+              );
               building.mesh.position.set(building.x, 0.5 + building.level * 0.1, building.y);
               building.glow.position.set(building.x, 1 + building.level * 0.1, building.y);
               building.glow.scale.set(1 + building.level * 0.1, 1 + building.level * 0.1, 1 + building.level * 0.1);
